@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { MdCheck, MdExpandMore } from "react-icons/md";
 import { z } from "zod";
+import { Icon } from "../../components/Icon";
 import { getLayout } from "../../components/Layout";
 import { createUser } from "../../requests/createUser";
 import { titles } from "../../utils/constants";
@@ -40,6 +41,9 @@ const UsersPage: NextPageWithLayout = () => {
 		setIsOpen(false);
 		setIsSuccess(true);
 	};
+
+	const mutationIsLoading =
+		form.formState.isSubmitting || createUserMutation.isLoading;
 
 	return (
 		<>
@@ -196,9 +200,17 @@ const UsersPage: NextPageWithLayout = () => {
 
 									<button
 										type="submit"
-										className="px-8 py-3 bg-slate-900 text-white rounded-md font-medium text-sm hover:bg-slate-800 transition-all"
+										disabled={mutationIsLoading}
+										className="px-8 py-3 text-white rounded-md font-medium text-sm hover:bg-slate-800 transition-all disabled:bg-slate-900/80 bg-slate-900"
 									>
-										Submit
+										{mutationIsLoading ? (
+											<Icon
+												id="spinner"
+												className="h-5 w-5 animate-spin fill-slate-400 text-gray-300"
+											/>
+										) : (
+											"Submit"
+										)}
 									</button>
 								</div>
 							</form>
