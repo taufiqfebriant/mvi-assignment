@@ -1,9 +1,24 @@
+type ResponseJson = {
+	data: User[];
+	total: number;
+	page: number;
+	limit: number;
+};
+
+type User = {
+	id: string;
+	title: string;
+	firstName: string;
+	lastName: string;
+	picture: string;
+};
+
 type Params = {
 	limit: number;
 	page: number;
 };
 
-export const getUsers = async (params: Params) => {
+export const getUsers = async (params: Params): Promise<ResponseJson> => {
 	const requestParams = new URLSearchParams({
 		limit: String(params.limit),
 		page: String(params.page),

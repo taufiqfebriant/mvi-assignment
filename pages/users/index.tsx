@@ -1,6 +1,6 @@
 import { Dialog, Listbox } from "@headlessui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -9,6 +9,7 @@ import { z } from "zod";
 import { Icon } from "../../components/Icon";
 import { getLayout } from "../../components/Layout";
 import { createUser } from "../../requests/createUser";
+import { queries } from "../../requests/keys";
 import { titles } from "../../utils/constants";
 import { inter } from "../../utils/fonts";
 import { NextPageWithLayout } from "../_app";
@@ -22,6 +23,56 @@ const schema = z.object({
 });
 
 type Schema = z.infer<typeof schema>;
+
+const UsersList = () => {
+	const users = useQuery({
+		...queries.users.list({ limit: 10, page: 1 }),
+		keepPreviousData: true,
+	});
+
+	if (users.isLoading) {
+		return (
+			<Icon
+				id="spinner"
+				className="h-8 w-8 animate-spin fill-slate-900 text-gray-300"
+			/>
+		);
+	}
+
+	if (users.isError) {
+		return <p>Something went wrong.</p>;
+	}
+
+	if (!users.data.data.length) {
+		return <p>No users yet.</p>;
+	}
+
+	return (
+		<table>
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Picture</th>
+					<th>Action</th>
+				</tr>
+			</thead>
+			<tbody>
+				{users.data.data.map((user) => (
+					<tr key={user.id}>
+						<td>
+							{user.firstName} {user.lastName}
+						</td>
+						<td>{user.picture}</td>
+						<td>
+							<button type="button">Edit</button>
+							<button type="button">Delete</button>
+						</td>
+					</tr>
+				))}
+			</tbody>
+		</table>
+	);
+};
 
 const UsersPage: NextPageWithLayout = () => {
 	let [isOpen, setIsOpen] = useState(false);
@@ -51,7 +102,7 @@ const UsersPage: NextPageWithLayout = () => {
 				Create User
 			</button>
 
-			<h1>Users page</h1>
+			<UsersList />
 
 			<Dialog
 				open={isOpen}
