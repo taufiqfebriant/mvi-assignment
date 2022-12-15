@@ -3,9 +3,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as Toast from "@radix-ui/react-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
+import { atom, useAtom } from "jotai";
 import Image from "next/image";
 import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import {
+	Controller,
+	FormProvider,
+	useForm,
+	useFormContext,
+} from "react-hook-form";
 import { MdCheck, MdClose, MdExpandMore } from "react-icons/md";
 import { z } from "zod";
 import { Icon } from "../../components/Icon";
@@ -18,8 +24,24 @@ import { NextPageWithLayout } from "../_app";
 
 const pictureSchema = z.string().url();
 
+const selectedUserIdAtom = atom<string | null>(null);
+const isFormDialogOpenAtom = atom(false);
+
+const schema = z.object({
+	title: z.string().min(1, { message: "Please choose a title." }),
+	firstName: z.string().min(1, { message: "Please enter your first name." }),
+	lastName: z.string().min(1, { message: "Please enter your last name." }),
+	email: z.string().email({ message: "Please enter a valid email." }),
+	picture: z.string().url({ message: "Please enter a valid URL." }),
+});
+
+type Schema = z.infer<typeof schema>;
+
 const UsersList = () => {
 	const [page, setPage] = useState(0);
+	const form = useFormContext<Schema>();
+	const [, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
+	const [, setSelectedUserId] = useAtom(selectedUserIdAtom);
 
 	const users = useQuery({
 		...queries.users.list({ limit: 10, page }),
@@ -92,7 +114,28 @@ const UsersList = () => {
 								</td>
 								<td>
 									<div className="flex justify-center gap-x-1">
-										<button type="button">Edit</button>
+										<button
+											type="button"
+											onClick={() => {
+												const selectedUser = users.data.data.find(
+													(u) => u.id === user.id
+												);
+
+												if (selectedUser) {
+													setSelectedUserId(user.id);
+
+													form.reset({
+														title: selectedUser.title,
+														firstName: selectedUser.firstName,
+														lastName: selectedUser.lastName,
+														picture: selectedUser.picture,
+													});
+												}
+												setIsFormDialogOpen(true);
+											}}
+										>
+											Edit
+										</button>
 										<span>|</span>
 										<button type="button" className="text-red-500">
 											Delete
@@ -134,8 +177,8 @@ const UsersList = () => {
 				<button
 					type="button"
 					onClick={() => setPage((prev) => prev + 1)}
-					disabled={page === users.data.totalPages}
-					className={clsx({ underline: page !== users.data.totalPages })}
+					disabled={page + 1 === users.data.totalPages}
+					className={clsx({ underline: page + 1 !== users.data.totalPages })}
 				>
 					Next
 				</button>
@@ -144,18 +187,10 @@ const UsersList = () => {
 	);
 };
 
-const schema = z.object({
-	title: z.string().min(1, { message: "Please choose a title." }),
-	firstName: z.string().min(1, { message: "Please enter your first name." }),
-	lastName: z.string().min(1, { message: "Please enter your last name." }),
-	email: z.string().email({ message: "Please enter a valid email." }),
-	picture: z.string().url({ message: "Please enter a valid URL." }),
-});
-
-type Schema = z.infer<typeof schema>;
-
 const UsersPage: NextPageWithLayout = () => {
-	let [isOpen, setIsOpen] = useState(false);
+	const [isFormDialogOpen, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
+	const [selectedUserId, setSelectedUserId] = useAtom(selectedUserIdAtom);
+
 	const queryClient = useQueryClient();
 	const [isSuccess, setIsSuccess] = useState(false);
 
@@ -167,10 +202,7 @@ const UsersPage: NextPageWithLayout = () => {
 		},
 	});
 
-	const onSubmit = (data: Schema) => {
-		createUserMutation.mutate(data);
-		setIsOpen(false);
-		setIsSuccess(true);
+	const clearForm = () => {
 		form.reset({
 			title: "",
 			firstName: "",
@@ -180,17 +212,24 @@ const UsersPage: NextPageWithLayout = () => {
 		});
 	};
 
+	const onSubmit = (data: Schema) => {
+		createUserMutation.mutate(data);
+		setIsFormDialogOpen(false);
+		setIsSuccess(true);
+		clearForm();
+	};
+
 	const mutationIsLoading =
 		form.formState.isSubmitting || createUserMutation.isLoading;
 
 	return (
-		<>
+		<FormProvider {...form}>
 			<div className="max-w-2xl mx-auto">
 				<div className="flex justify-center">
 					<button
 						type="button"
 						onClick={() => {
-							setIsOpen(true);
+							setIsFormDialogOpen(true);
 							setIsSuccess(false);
 						}}
 						className="bg-black text-white px-6 py-3 font-medium rounded-md"
@@ -222,8 +261,12 @@ const UsersPage: NextPageWithLayout = () => {
 			) : null}
 
 			<Dialog
-				open={isOpen}
-				onClose={() => setIsOpen(false)}
+				open={isFormDialogOpen}
+				onClose={() => {
+					setIsFormDialogOpen(false);
+					setSelectedUserId(null);
+					clearForm();
+				}}
 				className={`relative z-50 ${inter.className} font-sans`}
 			>
 				<div className="fixed inset-0 bg-black/50" aria-hidden="true" />
@@ -232,7 +275,7 @@ const UsersPage: NextPageWithLayout = () => {
 					<Dialog.Panel className="w-[42rem] rounded-md bg-white p-8">
 						<div className="max-w-md mx-auto">
 							<Dialog.Title className="font-semibold text-xl text-center">
-								Create User
+								{selectedUserId ? "Edit" : "Create"} User
 							</Dialog.Title>
 
 							<form onSubmit={form.handleSubmit(onSubmit)}>
@@ -327,20 +370,22 @@ const UsersPage: NextPageWithLayout = () => {
 										) : null}
 									</div>
 
-									<div>
-										<input
-											{...form.register("email")}
-											type="email"
-											placeholder="Email"
-											className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
-										/>
+									{!selectedUserId ? (
+										<div>
+											<input
+												{...form.register("email")}
+												type="email"
+												placeholder="Email"
+												className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
+											/>
 
-										{form.formState.errors.email ? (
-											<p className="mt-1 text-sm text-red-500">
-												{form.formState.errors.email.message}
-											</p>
-										) : null}
-									</div>
+											{form.formState.errors.email ? (
+												<p className="mt-1 text-sm text-red-500">
+													{form.formState.errors.email.message}
+												</p>
+											) : null}
+										</div>
+									) : null}
 
 									<div>
 										<input
@@ -361,7 +406,11 @@ const UsersPage: NextPageWithLayout = () => {
 									<button
 										type="button"
 										className="px-8 py-3 border border-gray-300 rounded-md font-medium text-sm text-gray-500 hover:border-black hover:text-black transition-all"
-										onClick={() => setIsOpen(false)}
+										onClick={() => {
+											setIsFormDialogOpen(false);
+											setSelectedUserId(null);
+											clearForm();
+										}}
 									>
 										Close
 									</button>
@@ -386,7 +435,7 @@ const UsersPage: NextPageWithLayout = () => {
 					</Dialog.Panel>
 				</div>
 			</Dialog>
-		</>
+		</FormProvider>
 	);
 };
 

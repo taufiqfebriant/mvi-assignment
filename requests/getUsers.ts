@@ -1,4 +1,4 @@
-type ResponseJson = {
+export type ResponseJson = {
 	data: User[];
 	total: number;
 	page: number;
