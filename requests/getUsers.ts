@@ -18,7 +18,7 @@ type Params = {
 	page: number;
 };
 
-export const getUsers = async (params: Params): Promise<ResponseJson> => {
+export const getUsers = async (params: Params) => {
 	const requestParams = new URLSearchParams({
 		limit: String(params.limit),
 		page: String(params.page),
@@ -39,5 +39,11 @@ export const getUsers = async (params: Params): Promise<ResponseJson> => {
 		throw new Error("Failed to get users");
 	}
 
-	return response.json();
+	const json: ResponseJson = await response.json();
+
+	return {
+		data: json.data,
+		page: json.page,
+		totalPages: Math.ceil(json.total / json.limit),
+	};
 };

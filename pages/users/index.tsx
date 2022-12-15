@@ -18,17 +18,21 @@ import { NextPageWithLayout } from "../_app";
 const pictureSchema = z.string().url();
 
 const UsersList = () => {
+	const [page, setPage] = useState(0);
+
 	const users = useQuery({
-		...queries.users.list({ limit: 10, page: 0 }),
+		...queries.users.list({ limit: 10, page }),
 		keepPreviousData: true,
 	});
 
-	if (users.isLoading) {
+	if (users.isLoading || users.isPreviousData) {
 		return (
-			<Icon
-				id="spinner"
-				className="h-8 w-8 animate-spin fill-slate-900 text-gray-300"
-			/>
+			<div className="flex justify-center items-center mt-10">
+				<Icon
+					id="spinner"
+					className="h-8 w-8 animate-spin fill-black text-gray-300"
+				/>
+			</div>
 		);
 	}
 
@@ -47,57 +51,95 @@ const UsersList = () => {
 	};
 
 	return (
-		<div className="border border-gray-300 rounded-md mt-10">
-			<table className="w-full">
-				<thead className="border-b border-gray-300">
-					<tr className="h-10">
-						<th className="border-r border-gray-300">Name</th>
-						<th className="border-r border-gray-300">Picture</th>
-						<th>Action</th>
-					</tr>
-				</thead>
-				<tbody>
-					{users.data.data.map((user, index) => (
-						<tr
-							key={user.id}
-							className={clsx("border-gray-300 h-14", {
-								"border-b": index + 1 !== users.data.data.length,
-							})}
-						>
-							<td className="border-r border-gray-300 px-4">
-								{user.firstName} {user.lastName}
-							</td>
-							<td className="border-r border-gray-300">
-								<div className="flex justify-center">
-									{validatePicture({ picture: user.picture }) ? (
-										<div className="relative h-[40px] w-[40px]">
-											<Image
-												fill={true}
-												src={user.picture}
-												alt="User picture"
-												className="object-cover"
-												sizes="100%"
-											/>
-										</div>
-									) : (
-										"-"
-									)}
-								</div>
-							</td>
-							<td>
-								<div className="flex justify-center gap-x-1">
-									<button type="button">Edit</button>
-									<span>|</span>
-									<button type="button" className="text-red-500">
-										Delete
-									</button>
-								</div>
-							</td>
+		<>
+			<div className="border border-gray-300 rounded-md mt-10">
+				<table className="w-full">
+					<thead className="border-b border-gray-300">
+						<tr className="h-10">
+							<th className="border-r border-gray-300">Name</th>
+							<th className="border-r border-gray-300">Picture</th>
+							<th>Action</th>
 						</tr>
-					))}
-				</tbody>
-			</table>
-		</div>
+					</thead>
+					<tbody>
+						{users.data.data.map((user, index) => (
+							<tr
+								key={user.id}
+								className={clsx("border-gray-300 h-14", {
+									"border-b": index + 1 !== users.data.data.length,
+								})}
+							>
+								<td className="border-r border-gray-300 px-4">
+									{user.firstName} {user.lastName}
+								</td>
+								<td className="border-r border-gray-300">
+									<div className="flex justify-center">
+										{validatePicture({ picture: user.picture }) ? (
+											<div className="relative h-[40px] w-[40px]">
+												<Image
+													fill={true}
+													src={user.picture}
+													alt="User picture"
+													className="object-cover"
+													sizes="100%"
+												/>
+											</div>
+										) : (
+											"-"
+										)}
+									</div>
+								</td>
+								<td>
+									<div className="flex justify-center gap-x-1">
+										<button type="button">Edit</button>
+										<span>|</span>
+										<button type="button" className="text-red-500">
+											Delete
+										</button>
+									</div>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+
+			<div className="flex items-center mt-6 gap-x-10 justify-center">
+				<button
+					type="button"
+					onClick={() => setPage((prev) => prev - 1)}
+					disabled={page === 1}
+					className={clsx({ underline: page !== 1 })}
+				>
+					Previous
+				</button>
+
+				<div className="flex gap-x-3">
+					{Array.from({ length: users.data.totalPages }, (_, i) => i).map(
+						(n) => (
+							<button
+								type="button"
+								key={n}
+								disabled={page === n}
+								className={clsx({ underline: page !== n })}
+								onClick={() => setPage(n)}
+							>
+								{n + 1}
+							</button>
+						)
+					)}
+				</div>
+
+				<button
+					type="button"
+					onClick={() => setPage((prev) => prev + 1)}
+					disabled={page === users.data.totalPages}
+					className={clsx({ underline: page !== users.data.totalPages })}
+				>
+					Next
+				</button>
+			</div>
+		</>
 	);
 };
 
@@ -231,7 +273,7 @@ const UsersPage: NextPageWithLayout = () => {
 										<input
 											{...form.register("firstName")}
 											placeholder="First Name"
-											className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-slate-900 w-full"
+											className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
 										/>
 
 										{form.formState.errors.firstName ? (
@@ -245,7 +287,7 @@ const UsersPage: NextPageWithLayout = () => {
 										<input
 											{...form.register("lastName")}
 											placeholder="Last Name"
-											className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-slate-900 w-full"
+											className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
 										/>
 
 										{form.formState.errors.lastName ? (
@@ -260,7 +302,7 @@ const UsersPage: NextPageWithLayout = () => {
 											{...form.register("email")}
 											type="email"
 											placeholder="Email"
-											className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-slate-900 w-full"
+											className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
 										/>
 
 										{form.formState.errors.email ? (
@@ -274,7 +316,7 @@ const UsersPage: NextPageWithLayout = () => {
 										<input
 											{...form.register("picture")}
 											placeholder="Picture"
-											className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-slate-900 w-full"
+											className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
 										/>
 
 										{form.formState.errors.picture ? (
@@ -288,7 +330,7 @@ const UsersPage: NextPageWithLayout = () => {
 								<div className="flex justify-end mt-6 gap-x-4">
 									<button
 										type="button"
-										className="px-8 py-3 border border-gray-300 rounded-md font-medium text-sm text-gray-500 hover:border-slate-900 hover:text-slate-900 transition-all"
+										className="px-8 py-3 border border-gray-300 rounded-md font-medium text-sm text-gray-500 hover:border-black hover:text-black transition-all"
 										onClick={() => setIsOpen(false)}
 									>
 										Close
@@ -297,12 +339,12 @@ const UsersPage: NextPageWithLayout = () => {
 									<button
 										type="submit"
 										disabled={mutationIsLoading}
-										className="px-8 py-3 text-white rounded-md font-medium text-sm hover:bg-slate-800 transition-all disabled:bg-slate-900/80 bg-slate-900"
+										className="px-8 py-3 text-white rounded-md font-medium text-sm hover:bg-[#181818] transition-all disabled:bg-black/80 bg-black"
 									>
 										{mutationIsLoading ? (
 											<Icon
 												id="spinner"
-												className="h-5 w-5 animate-spin fill-slate-400 text-gray-300"
+												className="h-5 w-5 animate-spin fill-black/30 text-gray-300"
 											/>
 										) : (
 											"Submit"
