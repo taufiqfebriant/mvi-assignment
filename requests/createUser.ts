@@ -1,7 +1,5 @@
-import { titles } from "../utils/constants";
-
 type Params = {
-	title: typeof titles[number];
+	title: string;
 	firstName: string;
 	lastName: string;
 	email: string;

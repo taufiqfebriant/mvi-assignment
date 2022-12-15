@@ -86,8 +86,8 @@ const HomePage: NextPageWithLayout = () => {
 				<button
 					type="button"
 					onClick={() => setPage((prev) => prev - 1)}
-					disabled={page === 1}
-					className={clsx({ underline: page !== 1 })}
+					disabled={page === 0}
+					className={clsx({ underline: page !== 0 })}
 				>
 					Previous
 				</button>

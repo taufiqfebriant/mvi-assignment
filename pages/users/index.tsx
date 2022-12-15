@@ -1,11 +1,12 @@
 import { Dialog, Listbox } from "@headlessui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as Toast from "@radix-ui/react-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import Image from "next/image";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { MdCheck, MdExpandMore } from "react-icons/md";
+import { MdCheck, MdClose, MdExpandMore } from "react-icons/md";
 import { z } from "zod";
 import { Icon } from "../../components/Icon";
 import { getLayout } from "../../components/Layout";
@@ -108,8 +109,8 @@ const UsersList = () => {
 				<button
 					type="button"
 					onClick={() => setPage((prev) => prev - 1)}
-					disabled={page === 1}
-					className={clsx({ underline: page !== 1 })}
+					disabled={page === 0}
+					className={clsx({ underline: page !== 0 })}
 				>
 					Previous
 				</button>
@@ -144,7 +145,7 @@ const UsersList = () => {
 };
 
 const schema = z.object({
-	title: z.enum(titles, { required_error: "Please choose a title." }),
+	title: z.string().min(1, { message: "Please choose a title." }),
 	firstName: z.string().min(1, { message: "Please enter your first name." }),
 	lastName: z.string().min(1, { message: "Please enter your last name." }),
 	email: z.string().email({ message: "Please enter a valid email." }),
@@ -170,6 +171,13 @@ const UsersPage: NextPageWithLayout = () => {
 		createUserMutation.mutate(data);
 		setIsOpen(false);
 		setIsSuccess(true);
+		form.reset({
+			title: "",
+			firstName: "",
+			lastName: "",
+			email: "",
+			picture: "",
+		});
 	};
 
 	const mutationIsLoading =
@@ -181,7 +189,10 @@ const UsersPage: NextPageWithLayout = () => {
 				<div className="flex justify-center">
 					<button
 						type="button"
-						onClick={() => setIsOpen(true)}
+						onClick={() => {
+							setIsOpen(true);
+							setIsSuccess(false);
+						}}
 						className="bg-black text-white px-6 py-3 font-medium rounded-md"
 					>
 						Create User
@@ -190,6 +201,25 @@ const UsersPage: NextPageWithLayout = () => {
 
 				<UsersList />
 			</div>
+
+			{isSuccess ? (
+				<Toast.Provider duration={4000}>
+					<Toast.Root className="relative rounded-md bg-white px-4 py-3 text-[#151515] shadow-sm border border-gray-300">
+						<Toast.Title className="font-medium">Success</Toast.Title>
+						<Toast.Close
+							aria-label="Close"
+							className="absolute top-2 right-2 rounded-md border border-gray-500 p-[0.1rem] hover:bg-gray-200"
+						>
+							<MdClose aria-hidden />
+						</Toast.Close>
+						<Toast.Description className="text-sm text-gray-600">
+							Successfully added user.
+						</Toast.Description>
+					</Toast.Root>
+
+					<Toast.Viewport className="fixed top-0 right-0 w-96 max-w-[100vw] p-6" />
+				</Toast.Provider>
+			) : null}
 
 			<Dialog
 				open={isOpen}
