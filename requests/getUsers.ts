@@ -5,7 +5,7 @@ type ResponseJson = {
 	limit: number;
 };
 
-type User = {
+export type User = {
 	id: string;
 	title: string;
 	firstName: string;

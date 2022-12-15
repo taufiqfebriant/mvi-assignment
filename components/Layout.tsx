@@ -14,7 +14,7 @@ export const Layout = (props: Props) => {
 
 	return (
 		<div className={`${inter.variable} font-sans flex min-h-screen`}>
-			<nav className="h-screen w-72 bg-slate-900 text-white text-xl">
+			<nav className="h-screen w-72 bg-slate-900 text-white text-xl shrink-0 sticky top-0">
 				<ul>
 					<li className="border-b border-slate-800">
 						<Link
@@ -52,7 +52,7 @@ export const Layout = (props: Props) => {
 				</ul>
 			</nav>
 
-			<main className="px-10 py-8">{props.children}</main>
+			<main className="px-10 py-8 flex-1">{props.children}</main>
 		</div>
 	);
 };
