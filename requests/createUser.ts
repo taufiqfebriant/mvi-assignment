@@ -28,7 +28,7 @@ export const createUser = async (params: Params) => {
 	);
 
 	if (!response.ok) {
-		throw new Error("Failed to get users");
+		throw new Error("Failed to create user");
 	}
 
 	return response.json();

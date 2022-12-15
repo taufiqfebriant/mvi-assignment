@@ -14,16 +14,6 @@ import { titles } from "../../utils/constants";
 import { inter } from "../../utils/fonts";
 import { NextPageWithLayout } from "../_app";
 
-const schema = z.object({
-	title: z.enum(titles, { required_error: "Please choose a title." }),
-	firstName: z.string().min(1, { message: "Please enter your first name." }),
-	lastName: z.string().min(1, { message: "Please enter your last name." }),
-	email: z.string().email({ message: "Please enter a valid email." }),
-	picture: z.string().url({ message: "Please enter a valid URL." }),
-});
-
-type Schema = z.infer<typeof schema>;
-
 const UsersList = () => {
 	const users = useQuery({
 		...queries.users.list({ limit: 10, page: 1 }),
@@ -73,6 +63,16 @@ const UsersList = () => {
 		</table>
 	);
 };
+
+const schema = z.object({
+	title: z.enum(titles, { required_error: "Please choose a title." }),
+	firstName: z.string().min(1, { message: "Please enter your first name." }),
+	lastName: z.string().min(1, { message: "Please enter your last name." }),
+	email: z.string().email({ message: "Please enter a valid email." }),
+	picture: z.string().url({ message: "Please enter a valid URL." }),
+});
+
+type Schema = z.infer<typeof schema>;
 
 const UsersPage: NextPageWithLayout = () => {
 	let [isOpen, setIsOpen] = useState(false);
