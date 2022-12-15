@@ -10,7 +10,7 @@ export default function Document() {
 				as="image"
 				type="image/svg+xml"
 			/>
-			<body>
+			<body className="antialiased">
 				<Main />
 				<NextScript />
 			</body>

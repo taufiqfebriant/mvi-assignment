@@ -14,36 +14,36 @@ export const Layout = (props: Props) => {
 
 	return (
 		<div className={`${inter.variable} font-sans flex min-h-screen`}>
-			<nav className="h-screen w-72 bg-slate-900 text-white text-xl shrink-0 sticky top-0">
+			<nav className="h-screen w-72 bg-black text-white text-xl shrink-0 sticky top-0">
 				<ul>
-					<li className="border-b border-slate-800">
+					<li className="border-b border-[#202020]">
 						<Link
 							href="/"
 							className={clsx(
-								"flex justify-center py-4 hover:bg-slate-800 transition-colors text-3xl",
-								{ "bg-slate-800": router.asPath === "/" }
+								"flex justify-center py-4 hover:bg-[#181818] transition-colors text-3xl",
+								{ "bg-[#181818]": router.asPath === "/" }
 							)}
 						>
 							<MdHome />
 						</Link>
 					</li>
-					<li className="border-b border-slate-800">
+					<li className="border-b border-[#202020]">
 						<Link
 							href="/users"
 							className={clsx(
-								"flex justify-center py-4 hover:bg-slate-800 transition-colors",
-								{ "bg-slate-800": router.asPath === "/users" }
+								"flex justify-center py-4 hover:bg-[#181818] transition-colors",
+								{ "bg-[#181818]": router.asPath === "/users" }
 							)}
 						>
 							User
 						</Link>
 					</li>
-					<li className="border-b border-slate-800">
+					<li className="border-b border-[#202020]">
 						<Link
 							href="/posts"
 							className={clsx(
-								"flex justify-center py-4 hover:bg-slate-800 transition-colors",
-								{ "bg-slate-800": router.asPath === "/posts" }
+								"flex justify-center py-4 hover:bg-[#181818] transition-colors",
+								{ "bg-[#181818]": router.asPath === "/posts" }
 							)}
 						>
 							Post
