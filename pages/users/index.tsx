@@ -2,6 +2,7 @@ import { Dialog, Listbox } from "@headlessui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
+import Image from "next/image";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { MdCheck, MdExpandMore } from "react-icons/md";
@@ -14,9 +15,11 @@ import { titles } from "../../utils/constants";
 import { inter } from "../../utils/fonts";
 import { NextPageWithLayout } from "../_app";
 
+const pictureSchema = z.string().url();
+
 const UsersList = () => {
 	const users = useQuery({
-		...queries.users.list({ limit: 10, page: 1 }),
+		...queries.users.list({ limit: 10, page: 0 }),
 		keepPreviousData: true,
 	});
 
@@ -37,30 +40,64 @@ const UsersList = () => {
 		return <p>No users yet.</p>;
 	}
 
+	const validatePicture = (
+		params: Pick<typeof users["data"]["data"][number], "picture">
+	) => {
+		return pictureSchema.safeParse(params.picture).success;
+	};
+
 	return (
-		<table>
-			<thead>
-				<tr>
-					<th>Name</th>
-					<th>Picture</th>
-					<th>Action</th>
-				</tr>
-			</thead>
-			<tbody>
-				{users.data.data.map((user) => (
-					<tr key={user.id}>
-						<td>
-							{user.firstName} {user.lastName}
-						</td>
-						<td>{user.picture}</td>
-						<td>
-							<button type="button">Edit</button>
-							<button type="button">Delete</button>
-						</td>
+		<div className="border border-gray-300 rounded-md mt-10">
+			<table className="w-full">
+				<thead className="border-b border-gray-300">
+					<tr className="h-10">
+						<th className="border-r border-gray-300">Name</th>
+						<th className="border-r border-gray-300">Picture</th>
+						<th>Action</th>
 					</tr>
-				))}
-			</tbody>
-		</table>
+				</thead>
+				<tbody>
+					{users.data.data.map((user, index) => (
+						<tr
+							key={user.id}
+							className={clsx("border-gray-300 h-14", {
+								"border-b": index + 1 !== users.data.data.length,
+							})}
+						>
+							<td className="border-r border-gray-300 px-4">
+								{user.firstName} {user.lastName}
+							</td>
+							<td className="border-r border-gray-300">
+								<div className="flex justify-center">
+									{validatePicture({ picture: user.picture }) ? (
+										<div className="relative h-[40px] w-[40px]">
+											<Image
+												fill={true}
+												src={user.picture}
+												alt="User picture"
+												className="object-cover"
+												sizes="100%"
+											/>
+										</div>
+									) : (
+										"-"
+									)}
+								</div>
+							</td>
+							<td>
+								<div className="flex justify-center gap-x-1">
+									<button type="button">Edit</button>
+									<span>|</span>
+									<button type="button" className="text-red-500">
+										Delete
+									</button>
+								</div>
+							</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
 	);
 };
 
@@ -98,11 +135,19 @@ const UsersPage: NextPageWithLayout = () => {
 
 	return (
 		<>
-			<button type="button" onClick={() => setIsOpen(true)}>
-				Create User
-			</button>
+			<div className="max-w-2xl mx-auto">
+				<div className="flex justify-center">
+					<button
+						type="button"
+						onClick={() => setIsOpen(true)}
+						className="bg-black text-white px-6 py-3 font-medium rounded-md"
+					>
+						Create User
+					</button>
+				</div>
 
-			<UsersList />
+				<UsersList />
+			</div>
 
 			<Dialog
 				open={isOpen}
