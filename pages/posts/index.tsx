@@ -394,8 +394,10 @@ const PostsList = () => {
 				<table className="w-full">
 					<thead className="border-b border-gray-300">
 						<tr className="h-10">
-							<th className="border-r border-gray-300">Name</th>
-							<th className="border-r border-gray-300">Picture</th>
+							<th className="border-r border-gray-300">Text</th>
+							<th className="border-r border-gray-300">Tags</th>
+							<th className="border-r border-gray-300">Image</th>
+							<th className="border-r border-gray-300">User</th>
 							<th>Action</th>
 						</tr>
 					</thead>
@@ -408,7 +410,12 @@ const PostsList = () => {
 								})}
 							>
 								<td className="border-r border-gray-300 px-4">{post.text}</td>
-								<td className="border-r border-gray-300">
+								<td className="border-r border-gray-300 px-4">
+									{post.tags.map((tag) => (
+										<p key={tag}>#{tag}</p>
+									))}
+								</td>
+								<td className="border-r border-gray-300 px-4">
 									<div className="flex justify-center">
 										{validateImage({ image: post.image }) ? (
 											<button
@@ -432,7 +439,10 @@ const PostsList = () => {
 										)}
 									</div>
 								</td>
-								<td>
+								<td className="border-r border-gray-300 px-4">
+									{post.owner.firstName} {post.owner.lastName}
+								</td>
+								<td className="px-4">
 									<div className="flex justify-center gap-x-1">
 										<button
 											type="button"
