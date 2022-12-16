@@ -154,7 +154,7 @@ const CreateForm = () => {
 				Create Post
 			</Dialog.Title>
 
-			<form onSubmit={form.handleSubmit(onSubmit)}>
+			<form onSubmit={form.handleSubmit(onSubmit)} className="mt-8">
 				<div className="flex flex-col gap-y-4">
 					<Controller
 						control={form.control}
@@ -166,7 +166,7 @@ const CreateForm = () => {
 										<>
 											<Listbox.Button
 												className={clsx(
-													"border w-full border-gray-300 h-10 mt-8 text-left px-4 flex items-center justify-between cursor-default",
+													"border w-full border-gray-300 h-10 text-left px-4 flex items-center justify-between cursor-default",
 													{ "rounded-t-md": open },
 													{ "rounded-md": !open }
 												)}
@@ -330,8 +330,13 @@ const EditForm = (props: EditFormProps) => {
 			text: props.post.text,
 			image: props.post.image,
 			likes: props.post.likes,
-			tags: [],
+			tags: props.post.tags.map((tag) => ({ name: tag })),
 		},
+	});
+
+	const tagsFieldArray = useFieldArray({
+		control: form.control,
+		name: "tags",
 	});
 
 	const [, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
@@ -365,7 +370,7 @@ const EditForm = (props: EditFormProps) => {
 				Edit Post
 			</Dialog.Title>
 
-			<form onSubmit={form.handleSubmit(onSubmit)}>
+			<form onSubmit={form.handleSubmit(onSubmit)} className="mt-8">
 				<div className="flex flex-col gap-y-4">
 					<div>
 						<input
@@ -407,6 +412,37 @@ const EditForm = (props: EditFormProps) => {
 								{form.formState.errors.likes.message}
 							</p>
 						) : null}
+					</div>
+
+					<div className="flex justify-end">
+						<button
+							type="button"
+							onClick={() => tagsFieldArray.append({ name: "" })}
+							className="border border-gray-300 px-3 rounded-md text-2xl h-10"
+						>
+							+
+						</button>
+					</div>
+
+					<div className="flex flex-col gap-y-4">
+						{tagsFieldArray.fields.map((field, index) => (
+							<div key={field.id} className="flex gap-x-2">
+								<input
+									{...form.register(`tags.${index}.name` as const)}
+									className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
+									placeholder={`Tag ${index + 1}`}
+								/>
+
+								{tagsFieldArray.fields.length > 1 ? (
+									<button
+										className="shrink-0 border border-gray-300 rounded-md w-12 flex justify-center items-center"
+										onClick={() => tagsFieldArray.remove(index)}
+									>
+										<FaTrash />
+									</button>
+								) : null}
+							</div>
+						))}
 					</div>
 				</div>
 
