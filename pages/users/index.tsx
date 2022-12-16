@@ -479,14 +479,7 @@ const UsersList = () => {
 												type="button"
 												className="relative h-[40px] w-[40px]"
 												onClick={() => {
-													const selectedUser = users.data.data.find(
-														(u) => u.id === user.id
-													);
-
-													if (selectedUser) {
-														setSelectedUser(user);
-													}
-
+													setSelectedUser(user);
 													setImagePreviewDialogOpen(true);
 												}}
 											>
@@ -508,14 +501,7 @@ const UsersList = () => {
 										<button
 											type="button"
 											onClick={() => {
-												const selectedUser = users.data.data.find(
-													(u) => u.id === user.id
-												);
-
-												if (selectedUser) {
-													setSelectedUser(user);
-												}
-
+												setSelectedUser(user);
 												setIsFormDialogOpen(true);
 											}}
 										>
@@ -526,14 +512,7 @@ const UsersList = () => {
 											type="button"
 											className="text-red-500"
 											onClick={() => {
-												const selectedUser = users.data.data.find(
-													(u) => u.id === user.id
-												);
-
-												if (selectedUser) {
-													setSelectedUser(user);
-												}
-
+												setSelectedUser(user);
 												setIsConfirmDialogOpen(true);
 											}}
 										>
