@@ -24,7 +24,15 @@ const pictureSchema = z.string().url();
 const selectedUserAtom = atom<
 	Awaited<ReturnType<typeof getUsers>>["data"][number] | null
 >(null);
+
 const isFormDialogOpenAtom = atom(false);
+
+type ToastContent = {
+	message: string;
+	type: "success" | "error";
+};
+
+const toastContentAtom = atom<ToastContent | null>(null);
 
 const editSchema = z.object({
 	title: z.string().min(1, { message: "Please choose a title." }),
@@ -45,13 +53,19 @@ type EditSchema = z.infer<typeof editSchema>;
 const CreateForm = () => {
 	const form = useForm<CreateSchema>({ resolver: zodResolver(createSchema) });
 	const queryClient = useQueryClient();
+
 	const [, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
+	const [, setToastContent] = useAtom(toastContentAtom);
 
 	const mutation = useMutation({
 		mutationFn: createUser,
 		onSuccess: () => {
 			queryClient.invalidateQueries();
 			setIsFormDialogOpen(false);
+			setToastContent({
+				message: "User created successfully.",
+				type: "success",
+			});
 		},
 	});
 
@@ -192,6 +206,7 @@ const CreateForm = () => {
 					<button
 						type="button"
 						className="px-8 py-3 border border-gray-300 rounded-md font-medium text-sm text-gray-500 hover:border-black hover:text-black transition-all"
+						onClick={() => setIsFormDialogOpen(false)}
 					>
 						Close
 					</button>
@@ -232,6 +247,7 @@ const EditForm = (props: EditFormProps) => {
 	});
 
 	const [, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
+	const [, setToastContent] = useAtom(toastContentAtom);
 	const queryClient = useQueryClient();
 
 	const mutation = useMutation({
@@ -239,6 +255,10 @@ const EditForm = (props: EditFormProps) => {
 		onSuccess: () => {
 			queryClient.invalidateQueries();
 			setIsFormDialogOpen(false);
+			setToastContent({
+				message: "User updated successfully.",
+				type: "success",
+			});
 		},
 	});
 
@@ -364,6 +384,7 @@ const EditForm = (props: EditFormProps) => {
 					<button
 						type="button"
 						className="px-8 py-3 border border-gray-300 rounded-md font-medium text-sm text-gray-500 hover:border-black hover:text-black transition-all"
+						onClick={() => setIsFormDialogOpen(false)}
 					>
 						Close
 					</button>
@@ -535,7 +556,7 @@ const UsersPage: NextPageWithLayout = () => {
 	const [isFormDialogOpen, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
 	const [selectedUser, setSelectedUser] = useAtom(selectedUserAtom);
 
-	const [isSuccess, setIsSuccess] = useState(false);
+	const [toastContent, setToastContent] = useAtom(toastContentAtom);
 
 	return (
 		<>
@@ -545,7 +566,6 @@ const UsersPage: NextPageWithLayout = () => {
 						type="button"
 						onClick={() => {
 							setIsFormDialogOpen(true);
-							setIsSuccess(false);
 						}}
 						className="bg-black text-white px-6 py-3 font-medium rounded-md"
 					>
@@ -575,10 +595,19 @@ const UsersPage: NextPageWithLayout = () => {
 				</div>
 			</Dialog>
 
-			{isSuccess ? (
+			{toastContent ? (
 				<Toast.Provider duration={4000}>
-					<Toast.Root className="relative rounded-md bg-white px-4 py-3 text-[#151515] shadow-sm border border-gray-300">
-						<Toast.Title className="font-medium">Success</Toast.Title>
+					<Toast.Root
+						className="relative rounded-md bg-white px-4 py-3 text-[#151515] shadow-sm border border-gray-300"
+						onOpenChange={(open) => {
+							if (!open && toastContent) {
+								setToastContent(null);
+							}
+						}}
+					>
+						<Toast.Title className="font-medium">
+							{toastContent.type === "success" ? "Success" : "Error"}
+						</Toast.Title>
 						<Toast.Close
 							aria-label="Close"
 							className="absolute top-2 right-2 rounded-md border border-gray-500 p-[0.1rem] hover:bg-gray-200"
@@ -586,7 +615,7 @@ const UsersPage: NextPageWithLayout = () => {
 							<MdClose aria-hidden />
 						</Toast.Close>
 						<Toast.Description className="text-sm text-gray-600">
-							Successfully added user.
+							{toastContent.message}
 						</Toast.Description>
 					</Toast.Root>
 
