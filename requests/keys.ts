@@ -1,10 +1,15 @@
 import { createQueryKeyStore } from "@lukemorales/query-key-factory";
+import { getInfiniteUsers } from "./getInfiniteUsers";
 import { getPosts } from "./getPosts";
 import { getUsers } from "./getUsers";
 
 type UsersListFilters = {
 	limit: number;
 	page: number;
+};
+
+type UsersInfiniteFilters = {
+	limit: number;
 };
 
 type PostsListFilters = {
@@ -22,6 +27,15 @@ export const queries = createQueryKeyStore({
 					limit: filters.limit,
 					page: filters.page,
 				}),
+		}),
+		infinite: (filters: UsersInfiniteFilters) => ({
+			queryKey: [{ ...filters }],
+			queryFn: (ctx) => {
+				return getInfiniteUsers({
+					limit: filters.limit,
+					page: ctx?.pageParam,
+				});
+			},
 		}),
 	},
 	posts: {

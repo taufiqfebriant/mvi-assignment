@@ -1,13 +1,20 @@
 import { Dialog, Listbox } from "@headlessui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as Toast from "@radix-ui/react-toast";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	useInfiniteQuery,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import clsx from "clsx";
 import { atom, useAtom } from "jotai";
 import Image from "next/image";
-import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { FaTrash } from "react-icons/fa";
 import { MdCheck, MdClose, MdExpandMore } from "react-icons/md";
+import { useInView } from "react-intersection-observer";
 import { z } from "zod";
 import { Icon } from "../../components/Icon";
 import { getLayout } from "../../components/Layout";
@@ -16,7 +23,6 @@ import { deletePost } from "../../requests/deletePost";
 import { getPosts } from "../../requests/getPosts";
 import { queries } from "../../requests/keys";
 import { updatePost } from "../../requests/updatePost";
-import { titles } from "../../utils/constants";
 import { inter } from "../../utils/fonts";
 import { NextPageWithLayout } from "../_app";
 
@@ -63,11 +69,42 @@ type CreateSchema = z.infer<typeof createSchema>;
 type EditSchema = z.infer<typeof editSchema>;
 
 const CreateForm = () => {
-	const form = useForm<CreateSchema>({ resolver: zodResolver(createSchema) });
+	const form = useForm<CreateSchema>({
+		resolver: zodResolver(createSchema),
+		defaultValues: {
+			tags: [
+				{
+					name: "",
+				},
+			],
+		},
+	});
+
+	const tagsFieldArray = useFieldArray({
+		control: form.control,
+		name: "tags",
+	});
+
 	const queryClient = useQueryClient();
 
 	const [, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
 	const [, setToastContent] = useAtom(toastContentAtom);
+
+	const users = useInfiniteQuery({
+		...queries.users.infinite({ limit: 10 }),
+		getNextPageParam: (lastPage) => lastPage.nextPage,
+	});
+
+	const inView = useInView({ trackVisibility: true });
+	useEffect(() => {
+		const fetchMore = async () => {
+			await users.fetchNextPage();
+		};
+
+		if (inView.entry?.isIntersecting) {
+			fetchMore();
+		}
+	}, [inView.entry?.isIntersecting, users]);
 
 	const mutation = useMutation({
 		mutationFn: createPost,
@@ -89,6 +126,27 @@ const CreateForm = () => {
 	};
 
 	const isMutating = form.formState.isSubmitting || mutation.isLoading;
+
+	if (users.isLoading) {
+		return <p>Loading...</p>;
+	}
+
+	if (users.isError) {
+		return <p>Something went wrong.</p>;
+	}
+
+	const flatUsers = users.data.pages.flatMap((page) => page.data);
+
+	const getFullName = (
+		params: Pick<typeof users["data"]["pages"][number]["data"][number], "id">
+	) => {
+		const relatedUser = flatUsers.find((user) => user.id === params.id);
+		if (relatedUser) {
+			return `${relatedUser.firstName} ${relatedUser.lastName}`;
+		}
+
+		return "Owner";
+	};
 
 	return (
 		<>
@@ -118,25 +176,22 @@ const CreateForm = () => {
 														"text-gray-400": !value,
 													})}
 												>
-													{value
-														? value.charAt(0).toUpperCase() + value.slice(1)
-														: "Title"}
+													{value ? getFullName({ id: value }) : "Owner"}
 												</span>
 												<MdExpandMore className="text-2xl" />
 											</Listbox.Button>
 
-											<Listbox.Options className="border-x border-b border-gray-300 rounded-b-md flex flex-col divide-y divide-gray-300 absolute w-full bg-white shadow">
-												{titles.map((title) => (
+											<Listbox.Options className="border-x border-b border-gray-300 rounded-b-md absolute w-full bg-white shadow overflow-y-auto max-h-32">
+												{flatUsers.map((user) => (
 													<Listbox.Option
-														key={title}
-														value={title}
-														className="h-10 flex items-center px-4 cursor-default hover:bg-gray-100 justify-between"
+														key={user.id}
+														value={user.id}
+														className="h-[40px] flex items-center px-4 cursor-default hover:bg-gray-100 justify-between"
 													>
 														{({ selected }) => (
 															<>
 																<span>
-																	{title.charAt(0).toUpperCase() +
-																		title.slice(1)}
+																	{user.firstName} {user.lastName}
 																</span>
 																{selected ? (
 																	<MdCheck className="text-xl" />
@@ -145,6 +200,8 @@ const CreateForm = () => {
 														)}
 													</Listbox.Option>
 												))}
+
+												<div ref={inView.ref} />
 											</Listbox.Options>
 										</>
 									)}
@@ -199,6 +256,37 @@ const CreateForm = () => {
 								{form.formState.errors.likes.message}
 							</p>
 						) : null}
+					</div>
+
+					<div className="flex justify-end">
+						<button
+							type="button"
+							onClick={() => tagsFieldArray.append({ name: "" })}
+							className="border border-gray-300 px-3 rounded-md text-2xl h-10"
+						>
+							+
+						</button>
+					</div>
+
+					<div className="flex flex-col gap-y-4">
+						{tagsFieldArray.fields.map((field, index) => (
+							<div key={field.id} className="flex gap-x-2">
+								<input
+									{...form.register(`tags.${index}.name` as const)}
+									className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
+									placeholder={`Tag ${index + 1}`}
+								/>
+
+								{tagsFieldArray.fields.length > 1 ? (
+									<button
+										className="shrink-0 border border-gray-300 rounded-md w-12 flex justify-center items-center"
+										onClick={() => tagsFieldArray.remove(index)}
+									>
+										<FaTrash />
+									</button>
+								) : null}
+							</div>
+						))}
 					</div>
 				</div>
 
