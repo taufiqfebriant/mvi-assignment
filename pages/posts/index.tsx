@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-query";
 import clsx from "clsx";
 import { atom, useAtom } from "jotai";
+import Head from "next/head";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
@@ -664,6 +665,10 @@ const PostsPage: NextPageWithLayout = () => {
 
 	return (
 		<>
+			<Head>
+				<title>Post</title>
+			</Head>
+
 			<div className="max-w-2xl mx-auto">
 				<div className="flex justify-center">
 					<button

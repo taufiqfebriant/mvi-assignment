@@ -4,6 +4,7 @@ import * as Toast from "@radix-ui/react-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import { atom, useAtom } from "jotai";
+import Head from "next/head";
 import Image from "next/image";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -606,6 +607,10 @@ const UsersPage: NextPageWithLayout = () => {
 
 	return (
 		<>
+			<Head>
+				<title>User</title>
+			</Head>
+
 			<div className="max-w-2xl mx-auto">
 				<div className="flex justify-center">
 					<button

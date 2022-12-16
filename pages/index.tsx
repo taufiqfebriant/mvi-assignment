@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
+import Head from "next/head";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Icon } from "../components/Icon";
@@ -139,6 +140,10 @@ const HomePage: NextPageWithLayout = () => {
 
 	return (
 		<>
+			<Head>
+				<title>Home</title>
+			</Head>
+
 			<input
 				type="text"
 				className="border border-gray-300 w-80 h-10 px-2.5 rounded-md focus:outline-none focus:border-slate-900"
