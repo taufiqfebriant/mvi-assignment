@@ -1,32 +1,31 @@
 type Params = {
+	id: string;
 	title: string;
 	firstName: string;
 	lastName: string;
-	email: string;
 	picture: string;
 };
 
-export const createUser = async (params: Params) => {
+export const updateUser = async (params: Params) => {
 	const response = await fetch(
-		`${process.env.NEXT_PUBLIC_API_URL}/user/create`,
+		`${process.env.NEXT_PUBLIC_API_URL}/user/${params.id}`,
 		{
 			headers: {
 				"app-id": process.env.NEXT_PUBLIC_API_APP_ID!,
 				"Content-Type": "application/json",
 			},
-			method: "POST",
+			method: "PUT",
 			body: JSON.stringify({
 				title: params.title,
 				firstName: params.firstName,
 				lastName: params.lastName,
-				email: params.email,
 				picture: params.picture,
 			}),
 		}
 	);
 
 	if (!response.ok) {
-		throw new Error("Failed to create user");
+		throw new Error("Failed to update user");
 	}
 
 	return response.json();

@@ -34,7 +34,7 @@ export const getPosts = async (params: Params) => {
 		`${process.env.NEXT_PUBLIC_API_URL}/post?${requestParams.toString()}`,
 		{
 			headers: {
-				"app-id": "62996cb2689bf0731cb00285",
+				"app-id": process.env.NEXT_PUBLIC_API_APP_ID!,
 			},
 			method: "GET",
 		}

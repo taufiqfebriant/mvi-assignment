@@ -6,42 +6,392 @@ import clsx from "clsx";
 import { atom, useAtom } from "jotai";
 import Image from "next/image";
 import { useState } from "react";
-import {
-	Controller,
-	FormProvider,
-	useForm,
-	useFormContext,
-} from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { MdCheck, MdClose, MdExpandMore } from "react-icons/md";
 import { z } from "zod";
 import { Icon } from "../../components/Icon";
 import { getLayout } from "../../components/Layout";
 import { createUser } from "../../requests/createUser";
+import { getUsers } from "../../requests/getUsers";
 import { queries } from "../../requests/keys";
+import { updateUser } from "../../requests/updateUser";
 import { titles } from "../../utils/constants";
 import { inter } from "../../utils/fonts";
 import { NextPageWithLayout } from "../_app";
 
 const pictureSchema = z.string().url();
 
-const selectedUserIdAtom = atom<string | null>(null);
+const selectedUserAtom = atom<
+	Awaited<ReturnType<typeof getUsers>>["data"][number] | null
+>(null);
 const isFormDialogOpenAtom = atom(false);
 
-const schema = z.object({
+const editSchema = z.object({
 	title: z.string().min(1, { message: "Please choose a title." }),
 	firstName: z.string().min(1, { message: "Please enter your first name." }),
 	lastName: z.string().min(1, { message: "Please enter your last name." }),
-	email: z.string().email({ message: "Please enter a valid email." }),
 	picture: z.string().url({ message: "Please enter a valid URL." }),
 });
 
-type Schema = z.infer<typeof schema>;
+const hasEmail = z.object({
+	email: z.string().email({ message: "Please enter a valid email." }),
+});
+
+const createSchema = editSchema.merge(hasEmail);
+
+type CreateSchema = z.infer<typeof createSchema>;
+type EditSchema = z.infer<typeof editSchema>;
+
+const CreateForm = () => {
+	const form = useForm<CreateSchema>({ resolver: zodResolver(createSchema) });
+	const queryClient = useQueryClient();
+	const [, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
+
+	const mutation = useMutation({
+		mutationFn: createUser,
+		onSuccess: () => {
+			queryClient.invalidateQueries();
+			setIsFormDialogOpen(false);
+		},
+	});
+
+	const onSubmit = (data: CreateSchema) => {
+		mutation.mutate(data);
+	};
+
+	const isMutating = form.formState.isSubmitting || mutation.isLoading;
+
+	return (
+		<>
+			<Dialog.Title className="font-semibold text-xl text-center">
+				Create User
+			</Dialog.Title>
+
+			<form onSubmit={form.handleSubmit(onSubmit)}>
+				<div className="flex flex-col gap-y-4">
+					<Controller
+						control={form.control}
+						name="title"
+						render={({ field: { value, ...rest } }) => (
+							<div>
+								<Listbox {...rest} as="div" className="relative">
+									{({ open }) => (
+										<>
+											<Listbox.Button
+												className={clsx(
+													"border w-full border-gray-300 h-10 mt-8 text-left px-4 flex items-center justify-between cursor-default",
+													{ "rounded-t-md": open },
+													{ "rounded-md": !open }
+												)}
+											>
+												<span
+													className={clsx({
+														"text-gray-400": !value,
+													})}
+												>
+													{value
+														? value.charAt(0).toUpperCase() + value.slice(1)
+														: "Title"}
+												</span>
+												<MdExpandMore className="text-2xl" />
+											</Listbox.Button>
+
+											<Listbox.Options className="border-x border-b border-gray-300 rounded-b-md flex flex-col divide-y divide-gray-300 absolute w-full bg-white shadow">
+												{titles.map((title) => (
+													<Listbox.Option
+														key={title}
+														value={title}
+														className="h-10 flex items-center px-4 cursor-default hover:bg-gray-100 justify-between"
+													>
+														{({ selected }) => (
+															<>
+																<span>
+																	{title.charAt(0).toUpperCase() +
+																		title.slice(1)}
+																</span>
+																{selected ? (
+																	<MdCheck className="text-xl" />
+																) : null}
+															</>
+														)}
+													</Listbox.Option>
+												))}
+											</Listbox.Options>
+										</>
+									)}
+								</Listbox>
+
+								{form.formState.errors.title ? (
+									<p className="mt-1 text-sm text-red-500">
+										{form.formState.errors.title.message}
+									</p>
+								) : null}
+							</div>
+						)}
+					/>
+
+					<div>
+						<input
+							{...form.register("firstName")}
+							placeholder="First Name"
+							className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
+						/>
+
+						{form.formState.errors.firstName ? (
+							<p className="mt-1 text-sm text-red-500">
+								{form.formState.errors.firstName.message}
+							</p>
+						) : null}
+					</div>
+
+					<div>
+						<input
+							{...form.register("lastName")}
+							placeholder="Last Name"
+							className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
+						/>
+
+						{form.formState.errors.lastName ? (
+							<p className="mt-1 text-sm text-red-500">
+								{form.formState.errors.lastName.message}
+							</p>
+						) : null}
+					</div>
+
+					<div>
+						<input
+							{...form.register("email")}
+							type="email"
+							placeholder="Email"
+							className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
+						/>
+
+						{form.formState.errors.email ? (
+							<p className="mt-1 text-sm text-red-500">
+								{form.formState.errors.email.message}
+							</p>
+						) : null}
+					</div>
+
+					<div>
+						<input
+							{...form.register("picture")}
+							placeholder="Picture"
+							className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
+						/>
+
+						{form.formState.errors.picture ? (
+							<p className="mt-1 text-sm text-red-500">
+								{form.formState.errors.picture.message}
+							</p>
+						) : null}
+					</div>
+				</div>
+
+				<div className="flex justify-end mt-6 gap-x-4">
+					<button
+						type="button"
+						className="px-8 py-3 border border-gray-300 rounded-md font-medium text-sm text-gray-500 hover:border-black hover:text-black transition-all"
+					>
+						Close
+					</button>
+
+					<button
+						type="submit"
+						disabled={isMutating}
+						className="px-8 py-3 text-white rounded-md font-medium text-sm hover:bg-[#181818] transition-all disabled:bg-black/80 bg-black"
+					>
+						{isMutating ? (
+							<Icon
+								id="spinner"
+								className="h-5 w-5 animate-spin fill-black/30 text-gray-300"
+							/>
+						) : (
+							"Submit"
+						)}
+					</button>
+				</div>
+			</form>
+		</>
+	);
+};
+
+type EditFormProps = {
+	user: Awaited<ReturnType<typeof getUsers>>["data"][number];
+};
+
+const EditForm = (props: EditFormProps) => {
+	const form = useForm<EditSchema>({
+		resolver: zodResolver(editSchema),
+		defaultValues: {
+			title: props.user.title,
+			firstName: props.user.firstName,
+			lastName: props.user.lastName,
+			picture: props.user.picture,
+		},
+	});
+
+	const [, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
+	const queryClient = useQueryClient();
+
+	const mutation = useMutation({
+		mutationFn: updateUser,
+		onSuccess: () => {
+			queryClient.invalidateQueries();
+			setIsFormDialogOpen(false);
+		},
+	});
+
+	const onSubmit = (data: EditSchema) => {
+		mutation.mutate({ ...data, id: props.user.id });
+	};
+
+	const isMutating = form.formState.isSubmitting || mutation.isLoading;
+
+	return (
+		<>
+			<Dialog.Title className="font-semibold text-xl text-center">
+				Edit User
+			</Dialog.Title>
+
+			<form onSubmit={form.handleSubmit(onSubmit)}>
+				<div className="flex flex-col gap-y-4">
+					<Controller
+						control={form.control}
+						name="title"
+						render={({ field: { value, ...rest } }) => (
+							<div>
+								<Listbox {...rest} as="div" className="relative">
+									{({ open }) => (
+										<>
+											<Listbox.Button
+												className={clsx(
+													"border w-full border-gray-300 h-10 mt-8 text-left px-4 flex items-center justify-between cursor-default",
+													{ "rounded-t-md": open },
+													{ "rounded-md": !open }
+												)}
+											>
+												<span
+													className={clsx({
+														"text-gray-400": !value,
+													})}
+												>
+													{value
+														? value.charAt(0).toUpperCase() + value.slice(1)
+														: "Title"}
+												</span>
+												<MdExpandMore className="text-2xl" />
+											</Listbox.Button>
+
+											<Listbox.Options className="border-x border-b border-gray-300 rounded-b-md flex flex-col divide-y divide-gray-300 absolute w-full bg-white shadow">
+												{titles.map((title) => (
+													<Listbox.Option
+														key={title}
+														value={title}
+														className="h-10 flex items-center px-4 cursor-default hover:bg-gray-100 justify-between"
+													>
+														{({ selected }) => (
+															<>
+																<span>
+																	{title.charAt(0).toUpperCase() +
+																		title.slice(1)}
+																</span>
+																{selected ? (
+																	<MdCheck className="text-xl" />
+																) : null}
+															</>
+														)}
+													</Listbox.Option>
+												))}
+											</Listbox.Options>
+										</>
+									)}
+								</Listbox>
+
+								{form.formState.errors.title ? (
+									<p className="mt-1 text-sm text-red-500">
+										{form.formState.errors.title.message}
+									</p>
+								) : null}
+							</div>
+						)}
+					/>
+
+					<div>
+						<input
+							{...form.register("firstName")}
+							placeholder="First Name"
+							className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
+						/>
+
+						{form.formState.errors.firstName ? (
+							<p className="mt-1 text-sm text-red-500">
+								{form.formState.errors.firstName.message}
+							</p>
+						) : null}
+					</div>
+
+					<div>
+						<input
+							{...form.register("lastName")}
+							placeholder="Last Name"
+							className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
+						/>
+
+						{form.formState.errors.lastName ? (
+							<p className="mt-1 text-sm text-red-500">
+								{form.formState.errors.lastName.message}
+							</p>
+						) : null}
+					</div>
+
+					<div>
+						<input
+							{...form.register("picture")}
+							placeholder="Picture"
+							className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
+						/>
+
+						{form.formState.errors.picture ? (
+							<p className="mt-1 text-sm text-red-500">
+								{form.formState.errors.picture.message}
+							</p>
+						) : null}
+					</div>
+				</div>
+
+				<div className="flex justify-end mt-6 gap-x-4">
+					<button
+						type="button"
+						className="px-8 py-3 border border-gray-300 rounded-md font-medium text-sm text-gray-500 hover:border-black hover:text-black transition-all"
+					>
+						Close
+					</button>
+
+					<button
+						type="submit"
+						disabled={isMutating}
+						className="px-8 py-3 text-white rounded-md font-medium text-sm hover:bg-[#181818] transition-all disabled:bg-black/80 bg-black"
+					>
+						{isMutating ? (
+							<Icon
+								id="spinner"
+								className="h-5 w-5 animate-spin fill-black/30 text-gray-300"
+							/>
+						) : (
+							"Submit"
+						)}
+					</button>
+				</div>
+			</form>
+		</>
+	);
+};
 
 const UsersList = () => {
 	const [page, setPage] = useState(0);
-	const form = useFormContext<Schema>();
 	const [, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
-	const [, setSelectedUserId] = useAtom(selectedUserIdAtom);
+	const [, setSelectedUser] = useAtom(selectedUserAtom);
 
 	const users = useQuery({
 		...queries.users.list({ limit: 10, page }),
@@ -122,15 +472,9 @@ const UsersList = () => {
 												);
 
 												if (selectedUser) {
-													setSelectedUserId(user.id);
-
-													form.reset({
-														title: selectedUser.title,
-														firstName: selectedUser.firstName,
-														lastName: selectedUser.lastName,
-														picture: selectedUser.picture,
-													});
+													setSelectedUser(user);
 												}
+
 												setIsFormDialogOpen(true);
 											}}
 										>
@@ -189,41 +533,12 @@ const UsersList = () => {
 
 const UsersPage: NextPageWithLayout = () => {
 	const [isFormDialogOpen, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
-	const [selectedUserId, setSelectedUserId] = useAtom(selectedUserIdAtom);
+	const [selectedUser, setSelectedUser] = useAtom(selectedUserAtom);
 
-	const queryClient = useQueryClient();
 	const [isSuccess, setIsSuccess] = useState(false);
 
-	const form = useForm<Schema>({ resolver: zodResolver(schema) });
-	const createUserMutation = useMutation({
-		mutationFn: createUser,
-		onSuccess: () => {
-			queryClient.invalidateQueries();
-		},
-	});
-
-	const clearForm = () => {
-		form.reset({
-			title: "",
-			firstName: "",
-			lastName: "",
-			email: "",
-			picture: "",
-		});
-	};
-
-	const onSubmit = (data: Schema) => {
-		createUserMutation.mutate(data);
-		setIsFormDialogOpen(false);
-		setIsSuccess(true);
-		clearForm();
-	};
-
-	const mutationIsLoading =
-		form.formState.isSubmitting || createUserMutation.isLoading;
-
 	return (
-		<FormProvider {...form}>
+		<>
 			<div className="max-w-2xl mx-auto">
 				<div className="flex justify-center">
 					<button
@@ -240,6 +555,25 @@ const UsersPage: NextPageWithLayout = () => {
 
 				<UsersList />
 			</div>
+
+			<Dialog
+				open={isFormDialogOpen}
+				onClose={() => {
+					setIsFormDialogOpen(false);
+					setSelectedUser(null);
+				}}
+				className={`relative z-50 ${inter.className} font-sans`}
+			>
+				<div className="fixed inset-0 bg-black/50" aria-hidden="true" />
+
+				<div className="fixed inset-0 flex items-center justify-center">
+					<Dialog.Panel className="w-[42rem] rounded-md bg-white p-8">
+						<div className="max-w-md mx-auto">
+							{selectedUser ? <EditForm user={selectedUser} /> : <CreateForm />}
+						</div>
+					</Dialog.Panel>
+				</div>
+			</Dialog>
 
 			{isSuccess ? (
 				<Toast.Provider duration={4000}>
@@ -259,183 +593,7 @@ const UsersPage: NextPageWithLayout = () => {
 					<Toast.Viewport className="fixed top-0 right-0 w-96 max-w-[100vw] p-6" />
 				</Toast.Provider>
 			) : null}
-
-			<Dialog
-				open={isFormDialogOpen}
-				onClose={() => {
-					setIsFormDialogOpen(false);
-					setSelectedUserId(null);
-					clearForm();
-				}}
-				className={`relative z-50 ${inter.className} font-sans`}
-			>
-				<div className="fixed inset-0 bg-black/50" aria-hidden="true" />
-
-				<div className="fixed inset-0 flex items-center justify-center">
-					<Dialog.Panel className="w-[42rem] rounded-md bg-white p-8">
-						<div className="max-w-md mx-auto">
-							<Dialog.Title className="font-semibold text-xl text-center">
-								{selectedUserId ? "Edit" : "Create"} User
-							</Dialog.Title>
-
-							<form onSubmit={form.handleSubmit(onSubmit)}>
-								<div className="flex flex-col gap-y-4">
-									<Controller
-										control={form.control}
-										name="title"
-										render={({ field: { value, ...rest } }) => (
-											<div>
-												<Listbox {...rest} as="div" className="relative">
-													{({ open }) => (
-														<>
-															<Listbox.Button
-																className={clsx(
-																	"border w-full border-gray-300 h-10 mt-8 text-left px-4 flex items-center justify-between cursor-default",
-																	{ "rounded-t-md": open },
-																	{ "rounded-md": !open }
-																)}
-															>
-																<span
-																	className={clsx({
-																		"text-gray-400": !value,
-																	})}
-																>
-																	{value
-																		? value.charAt(0).toUpperCase() +
-																		  value.slice(1)
-																		: "Title"}
-																</span>
-																<MdExpandMore className="text-2xl" />
-															</Listbox.Button>
-
-															<Listbox.Options className="border-x border-b border-gray-300 rounded-b-md flex flex-col divide-y divide-gray-300 absolute w-full bg-white shadow">
-																{titles.map((title) => (
-																	<Listbox.Option
-																		key={title}
-																		value={title}
-																		className="h-10 flex items-center px-4 cursor-default hover:bg-gray-100 justify-between"
-																	>
-																		{({ selected }) => (
-																			<>
-																				<span>
-																					{title.charAt(0).toUpperCase() +
-																						title.slice(1)}
-																				</span>
-																				{selected ? (
-																					<MdCheck className="text-xl" />
-																				) : null}
-																			</>
-																		)}
-																	</Listbox.Option>
-																))}
-															</Listbox.Options>
-														</>
-													)}
-												</Listbox>
-
-												{form.formState.errors.title ? (
-													<p className="mt-1 text-sm text-red-500">
-														{form.formState.errors.title.message}
-													</p>
-												) : null}
-											</div>
-										)}
-									/>
-
-									<div>
-										<input
-											{...form.register("firstName")}
-											placeholder="First Name"
-											className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
-										/>
-
-										{form.formState.errors.firstName ? (
-											<p className="mt-1 text-sm text-red-500">
-												{form.formState.errors.firstName.message}
-											</p>
-										) : null}
-									</div>
-
-									<div>
-										<input
-											{...form.register("lastName")}
-											placeholder="Last Name"
-											className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
-										/>
-
-										{form.formState.errors.lastName ? (
-											<p className="mt-1 text-sm text-red-500">
-												{form.formState.errors.lastName.message}
-											</p>
-										) : null}
-									</div>
-
-									{!selectedUserId ? (
-										<div>
-											<input
-												{...form.register("email")}
-												type="email"
-												placeholder="Email"
-												className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
-											/>
-
-											{form.formState.errors.email ? (
-												<p className="mt-1 text-sm text-red-500">
-													{form.formState.errors.email.message}
-												</p>
-											) : null}
-										</div>
-									) : null}
-
-									<div>
-										<input
-											{...form.register("picture")}
-											placeholder="Picture"
-											className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
-										/>
-
-										{form.formState.errors.picture ? (
-											<p className="mt-1 text-sm text-red-500">
-												{form.formState.errors.picture.message}
-											</p>
-										) : null}
-									</div>
-								</div>
-
-								<div className="flex justify-end mt-6 gap-x-4">
-									<button
-										type="button"
-										className="px-8 py-3 border border-gray-300 rounded-md font-medium text-sm text-gray-500 hover:border-black hover:text-black transition-all"
-										onClick={() => {
-											setIsFormDialogOpen(false);
-											setSelectedUserId(null);
-											clearForm();
-										}}
-									>
-										Close
-									</button>
-
-									<button
-										type="submit"
-										disabled={mutationIsLoading}
-										className="px-8 py-3 text-white rounded-md font-medium text-sm hover:bg-[#181818] transition-all disabled:bg-black/80 bg-black"
-									>
-										{mutationIsLoading ? (
-											<Icon
-												id="spinner"
-												className="h-5 w-5 animate-spin fill-black/30 text-gray-300"
-											/>
-										) : (
-											"Submit"
-										)}
-									</button>
-								</div>
-							</form>
-						</div>
-					</Dialog.Panel>
-				</div>
-			</Dialog>
-		</FormProvider>
+		</>
 	);
 };
 
