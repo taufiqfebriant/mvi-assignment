@@ -34,8 +34,9 @@ type ToastContent = {
 };
 
 const toastContentAtom = atom<ToastContent | null>(null);
-
 const isConfirmDialogOpenAtom = atom(false);
+
+const isImagePreviewDialogOpenAtom = atom(false);
 
 const editSchema = z.object({
 	title: z.string().min(1, { message: "Please choose a title." }),
@@ -416,6 +417,7 @@ const UsersList = () => {
 	const [page, setPage] = useState(0);
 	const [, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
 	const [, setIsConfirmDialogOpen] = useAtom(isConfirmDialogOpenAtom);
+	const [, setImagePreviewDialogOpen] = useAtom(isImagePreviewDialogOpenAtom);
 	const [, setSelectedUser] = useAtom(selectedUserAtom);
 
 	const users = useQuery({
@@ -473,7 +475,21 @@ const UsersList = () => {
 								<td className="border-r border-gray-300">
 									<div className="flex justify-center">
 										{validatePicture({ picture: user.picture }) ? (
-											<div className="relative h-[40px] w-[40px]">
+											<button
+												type="button"
+												className="relative h-[40px] w-[40px]"
+												onClick={() => {
+													const selectedUser = users.data.data.find(
+														(u) => u.id === user.id
+													);
+
+													if (selectedUser) {
+														setSelectedUser(user);
+													}
+
+													setImagePreviewDialogOpen(true);
+												}}
+											>
 												<Image
 													fill={true}
 													src={user.picture}
@@ -481,7 +497,7 @@ const UsersList = () => {
 													className="object-cover"
 													sizes="100%"
 												/>
-											</div>
+											</button>
 										) : (
 											"-"
 										)}
@@ -575,6 +591,10 @@ const UsersPage: NextPageWithLayout = () => {
 	const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useAtom(
 		isConfirmDialogOpenAtom
 	);
+	const [isImagePreviewDialogOpen, setIsImagePreviewDialogOpen] = useAtom(
+		isImagePreviewDialogOpenAtom
+	);
+
 	const [selectedUser, setSelectedUser] = useAtom(selectedUserAtom);
 
 	const [toastContent, setToastContent] = useAtom(toastContentAtom);
@@ -673,6 +693,40 @@ const UsersPage: NextPageWithLayout = () => {
 					<Dialog.Panel className="w-[42rem] rounded-md bg-white p-8">
 						<div className="max-w-md mx-auto">
 							{selectedUser ? <EditForm user={selectedUser} /> : <CreateForm />}
+						</div>
+					</Dialog.Panel>
+				</div>
+			</Dialog>
+
+			<Dialog
+				open={isImagePreviewDialogOpen}
+				onClose={() => {
+					setIsImagePreviewDialogOpen(false);
+				}}
+				className={`relative z-50 ${inter.className} font-sans`}
+			>
+				<div className="fixed inset-0 bg-black/50" aria-hidden="true" />
+
+				<div className="fixed inset-0 flex items-center justify-center">
+					<Dialog.Panel className="w-[30rem] rounded-md bg-white p-8 flex justify-center relative">
+						<button
+							type="button"
+							onClick={() => setIsImagePreviewDialogOpen(false)}
+							className="text-2xl absolute right-4 top-2"
+						>
+							<MdClose />
+						</button>
+
+						<div className="h-[225px] w-[225px] relative rounded-md overflow-hidden">
+							{selectedUser ? (
+								<Image
+									fill={true}
+									src={selectedUser.picture}
+									alt="User picture"
+									className="object-cover"
+									sizes="100%"
+								/>
+							) : null}
 						</div>
 					</Dialog.Panel>
 				</div>
