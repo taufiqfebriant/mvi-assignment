@@ -54,7 +54,7 @@ const editSchema = z.object({
 	tags: z
 		.array(
 			z.object({
-				name: z.string().min(1),
+				name: z.string().min(1, { message: "Please enter a tag." }),
 			})
 		)
 		.min(1, { message: "Please enter at least one tag." }),
@@ -160,9 +160,15 @@ const CreateForm = () => {
 					<Controller
 						control={form.control}
 						name="owner"
+						defaultValue=""
 						render={({ field: { value, ...rest } }) => (
 							<div>
-								<Listbox {...rest} as="div" className="relative">
+								<Listbox
+									{...rest}
+									as="div"
+									defaultValue={value}
+									className="relative"
+								>
 									{({ open }) => (
 										<>
 											<Listbox.Button
@@ -271,20 +277,29 @@ const CreateForm = () => {
 
 					<div className="flex flex-col gap-y-4">
 						{tagsFieldArray.fields.map((field, index) => (
-							<div key={field.id} className="flex gap-x-2">
-								<input
-									{...form.register(`tags.${index}.name` as const)}
-									className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
-									placeholder={`Tag ${index + 1}`}
-								/>
+							<div key={field.id}>
+								<div className="flex gap-x-2">
+									<input
+										{...form.register(`tags.${index}.name` as const)}
+										className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
+										placeholder={`Tag ${index + 1}`}
+									/>
 
-								{tagsFieldArray.fields.length > 1 ? (
-									<button
-										className="shrink-0 border border-gray-300 rounded-md w-12 flex justify-center items-center"
-										onClick={() => tagsFieldArray.remove(index)}
-									>
-										<FaTrash />
-									</button>
+									{tagsFieldArray.fields.length > 1 ? (
+										<button
+											className="shrink-0 border border-gray-300 rounded-md w-12 flex justify-center items-center"
+											onClick={() => tagsFieldArray.remove(index)}
+										>
+											<FaTrash />
+										</button>
+									) : null}
+								</div>
+
+								{form.formState.errors.tags &&
+								form.formState.errors.tags[index]?.name?.message ? (
+									<p className="mt-1 text-sm text-red-500">
+										{form.formState.errors.tags[index]?.name?.message}
+									</p>
 								) : null}
 							</div>
 						))}
@@ -427,20 +442,29 @@ const EditForm = (props: EditFormProps) => {
 
 					<div className="flex flex-col gap-y-4">
 						{tagsFieldArray.fields.map((field, index) => (
-							<div key={field.id} className="flex gap-x-2">
-								<input
-									{...form.register(`tags.${index}.name` as const)}
-									className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
-									placeholder={`Tag ${index + 1}`}
-								/>
+							<div key={field.id}>
+								<div className="flex gap-x-2">
+									<input
+										{...form.register(`tags.${index}.name` as const)}
+										className="border border-gray-300 rounded-md h-10 px-4 focus:outline-none focus:border-black w-full"
+										placeholder={`Tag ${index + 1}`}
+									/>
 
-								{tagsFieldArray.fields.length > 1 ? (
-									<button
-										className="shrink-0 border border-gray-300 rounded-md w-12 flex justify-center items-center"
-										onClick={() => tagsFieldArray.remove(index)}
-									>
-										<FaTrash />
-									</button>
+									{tagsFieldArray.fields.length > 1 ? (
+										<button
+											className="shrink-0 border border-gray-300 rounded-md w-12 flex justify-center items-center"
+											onClick={() => tagsFieldArray.remove(index)}
+										>
+											<FaTrash />
+										</button>
+									) : null}
+								</div>
+
+								{form.formState.errors.tags &&
+								form.formState.errors.tags[index]?.name?.message ? (
+									<p className="mt-1 text-sm text-red-500">
+										{form.formState.errors.tags[index]?.name?.message}
+									</p>
 								) : null}
 							</div>
 						))}
