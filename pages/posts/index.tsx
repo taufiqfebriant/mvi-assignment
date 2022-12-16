@@ -129,7 +129,14 @@ const CreateForm = () => {
 	const isMutating = form.formState.isSubmitting || mutation.isLoading;
 
 	if (users.isLoading) {
-		return <p>Loading...</p>;
+		return (
+			<div className="flex justify-center">
+				<Icon
+					id="spinner"
+					className="h-8 w-8 animate-spin fill-slate-900 text-gray-300"
+				/>
+			</div>
+		);
 	}
 
 	if (users.isError) {
@@ -208,7 +215,18 @@ const CreateForm = () => {
 													</Listbox.Option>
 												))}
 
-												<div ref={inView.ref} />
+												{users.isFetchingNextPage ? (
+													<div className="flex justify-center py-2">
+														<Icon
+															id="spinner"
+															className="h-5 w-5 animate-spin fill-black/30 text-gray-300"
+														/>
+													</div>
+												) : null}
+
+												{users.hasNextPage && !users.isFetchingNextPage ? (
+													<div ref={inView.ref} />
+												) : null}
 											</Listbox.Options>
 										</>
 									)}

@@ -42,7 +42,8 @@ export const getInfiniteUsers = async (params: Params) => {
 	const json: ResponseJson = await response.json();
 
 	const totalPages = Math.ceil(json.total / json.limit) - 1;
-	const nextPage = json.page === totalPages ? undefined : json.page + 1;
+	const nextPage =
+		json.page === totalPages || totalPages === 0 ? undefined : json.page + 1;
 
 	return {
 		data: json.data,
