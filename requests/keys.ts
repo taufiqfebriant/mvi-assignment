@@ -10,6 +10,7 @@ type UsersListFilters = {
 type PostsListFilters = {
 	limit: number;
 	page: number;
+	tag?: string;
 };
 
 export const queries = createQueryKeyStore({
@@ -30,6 +31,7 @@ export const queries = createQueryKeyStore({
 				getPosts({
 					limit: filters.limit,
 					page: filters.page,
+					tag: filters.tag,
 				}),
 		}),
 	},

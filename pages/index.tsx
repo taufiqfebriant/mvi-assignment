@@ -1,17 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "../components/Icon";
 import { getLayout } from "../components/Layout";
 import { queries } from "../requests/keys";
 import { NextPageWithLayout } from "./_app";
 
-const HomePage: NextPageWithLayout = () => {
+type PostsListProps = {
+	tag?: string;
+};
+
+const PostsList = (props: PostsListProps) => {
 	const [page, setPage] = useState(0);
 
+	useEffect(() => {
+		setPage(0);
+	}, [props.tag]);
+
 	const posts = useQuery({
-		...queries.posts.list({ limit: 8, page }),
+		...queries.posts.list({ limit: 8, page, tag: props.tag }),
 		keepPreviousData: true,
 	});
 
@@ -44,12 +52,6 @@ const HomePage: NextPageWithLayout = () => {
 
 	return (
 		<>
-			<input
-				type="text"
-				className="border border-gray-300 w-80 h-10 px-2.5 rounded-md focus:outline-none focus:border-slate-900"
-				placeholder="Search by tag..."
-			/>
-
 			<article className="grid grid-cols-4 gap-6 mt-10">
 				{posts.data.data.map((post) => (
 					<article
@@ -111,12 +113,40 @@ const HomePage: NextPageWithLayout = () => {
 				<button
 					type="button"
 					onClick={() => setPage((prev) => prev + 1)}
-					disabled={page === posts.data.totalPages}
-					className={clsx({ underline: page !== posts.data.totalPages })}
+					disabled={!page || page === posts.data.totalPages}
+					className={clsx({
+						underline: page && page !== posts.data.totalPages,
+					})}
 				>
 					Next
 				</button>
 			</div>
+		</>
+	);
+};
+
+const HomePage: NextPageWithLayout = () => {
+	const [tag, setTag] = useState<string>();
+	const [debouncedTag, setDebouncedTag] = useState<string | undefined>(tag);
+
+	useEffect(() => {
+		const handler = setTimeout(() => {
+			setDebouncedTag(tag);
+		}, 1000);
+
+		return () => clearTimeout(handler);
+	}, [tag]);
+
+	return (
+		<>
+			<input
+				type="text"
+				className="border border-gray-300 w-80 h-10 px-2.5 rounded-md focus:outline-none focus:border-slate-900"
+				placeholder="Search by tag..."
+				onChange={(e) => setTag(e.target.value)}
+			/>
+
+			<PostsList tag={debouncedTag} />
 		</>
 	);
 };

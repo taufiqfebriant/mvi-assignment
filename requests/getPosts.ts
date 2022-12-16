@@ -21,6 +21,7 @@ type Post = {
 type Params = {
 	limit: number;
 	page: number;
+	tag?: string;
 };
 
 export const getPosts = async (params: Params) => {
@@ -29,6 +30,32 @@ export const getPosts = async (params: Params) => {
 		page: String(params.page),
 		created: "1",
 	});
+
+	if (params.tag) {
+		const response = await fetch(
+			`${process.env.NEXT_PUBLIC_API_URL}/tag/${
+				params.tag
+			}/post?${requestParams.toString()}`,
+			{
+				headers: {
+					"app-id": process.env.NEXT_PUBLIC_API_APP_ID!,
+				},
+				method: "GET",
+			}
+		);
+
+		if (!response.ok) {
+			throw new Error("Failed to get posts by tag");
+		}
+
+		const json: ResponseJson = await response.json();
+
+		return {
+			data: json.data,
+			page: json.page,
+			totalPages: Math.ceil(json.total / json.limit),
+		};
+	}
 
 	const response = await fetch(
 		`${process.env.NEXT_PUBLIC_API_URL}/post?${requestParams.toString()}`,
