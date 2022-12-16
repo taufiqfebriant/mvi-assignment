@@ -92,7 +92,12 @@ const CreateForm = () => {
 						name="title"
 						render={({ field: { value, ...rest } }) => (
 							<div>
-								<Listbox {...rest} as="div" className="relative">
+								<Listbox
+									{...rest}
+									defaultValue={value}
+									as="div"
+									className="relative"
+								>
 									{({ open }) => (
 										<>
 											<Listbox.Button
@@ -285,7 +290,12 @@ const EditForm = (props: EditFormProps) => {
 						name="title"
 						render={({ field: { value, ...rest } }) => (
 							<div>
-								<Listbox {...rest} as="div" className="relative">
+								<Listbox
+									{...rest}
+									defaultValue={value}
+									as="div"
+									className="relative"
+								>
 									{({ open }) => (
 										<>
 											<Listbox.Button
@@ -556,7 +566,9 @@ const UsersList = () => {
 					type="button"
 					onClick={() => setPage((prev) => prev + 1)}
 					disabled={page + 1 === users.data.totalPages}
-					className={clsx({ underline: page + 1 !== users.data.totalPages })}
+					className={clsx({
+						underline: page + 1 !== users.data.totalPages,
+					})}
 				>
 					Next
 				</button>
