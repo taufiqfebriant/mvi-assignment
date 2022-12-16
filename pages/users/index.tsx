@@ -12,6 +12,7 @@ import { z } from "zod";
 import { Icon } from "../../components/Icon";
 import { getLayout } from "../../components/Layout";
 import { createUser } from "../../requests/createUser";
+import { deleteUser } from "../../requests/deleteUser";
 import { getUsers } from "../../requests/getUsers";
 import { queries } from "../../requests/keys";
 import { updateUser } from "../../requests/updateUser";
@@ -33,6 +34,8 @@ type ToastContent = {
 };
 
 const toastContentAtom = atom<ToastContent | null>(null);
+
+const isConfirmDialogOpenAtom = atom(false);
 
 const editSchema = z.object({
 	title: z.string().min(1, { message: "Please choose a title." }),
@@ -412,6 +415,7 @@ const EditForm = (props: EditFormProps) => {
 const UsersList = () => {
 	const [page, setPage] = useState(0);
 	const [, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
+	const [, setIsConfirmDialogOpen] = useAtom(isConfirmDialogOpenAtom);
 	const [, setSelectedUser] = useAtom(selectedUserAtom);
 
 	const users = useQuery({
@@ -502,7 +506,21 @@ const UsersList = () => {
 											Edit
 										</button>
 										<span>|</span>
-										<button type="button" className="text-red-500">
+										<button
+											type="button"
+											className="text-red-500"
+											onClick={() => {
+												const selectedUser = users.data.data.find(
+													(u) => u.id === user.id
+												);
+
+												if (selectedUser) {
+													setSelectedUser(user);
+												}
+
+												setIsConfirmDialogOpen(true);
+											}}
+										>
 											Delete
 										</button>
 									</div>
@@ -554,9 +572,26 @@ const UsersList = () => {
 
 const UsersPage: NextPageWithLayout = () => {
 	const [isFormDialogOpen, setIsFormDialogOpen] = useAtom(isFormDialogOpenAtom);
+	const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useAtom(
+		isConfirmDialogOpenAtom
+	);
 	const [selectedUser, setSelectedUser] = useAtom(selectedUserAtom);
 
 	const [toastContent, setToastContent] = useAtom(toastContentAtom);
+
+	const queryClient = useQueryClient();
+
+	const deleteUserMutation = useMutation({
+		mutationFn: deleteUser,
+		onSuccess: () => {
+			queryClient.invalidateQueries();
+			setIsConfirmDialogOpen(false);
+			setToastContent({
+				message: "User deleted successfully.",
+				type: "success",
+			});
+		},
+	});
 
 	return (
 		<>
@@ -566,6 +601,7 @@ const UsersPage: NextPageWithLayout = () => {
 						type="button"
 						onClick={() => {
 							setIsFormDialogOpen(true);
+							setSelectedUser(null);
 						}}
 						className="bg-black text-white px-6 py-3 font-medium rounded-md"
 					>
@@ -577,10 +613,57 @@ const UsersPage: NextPageWithLayout = () => {
 			</div>
 
 			<Dialog
+				open={isConfirmDialogOpen}
+				onClose={() => {
+					setIsConfirmDialogOpen(false);
+				}}
+				className={`relative z-50 ${inter.className} font-sans`}
+			>
+				<div className="fixed inset-0 bg-black/50" aria-hidden="true" />
+
+				<div className="fixed inset-0 flex items-center justify-center">
+					<Dialog.Panel className="w-[30rem] rounded-md bg-white p-8">
+						<div className="max-w-md mx-auto">
+							<Dialog.Description className="text-center">
+								Are you sure want to delete this data?
+							</Dialog.Description>
+
+							<div className="flex justify-between gap-x-2 mt-10">
+								<button
+									type="button"
+									className="basis-1/2 py-3 border border-gray-300 rounded-md font-medium text-sm text-gray-500 hover:border-black hover:text-black transition-all"
+								>
+									No
+								</button>
+								<button
+									type="button"
+									className="basis-1/2 py-3 rounded-md font-medium text-sm text-white transition-all bg-red-500 hover:bg-red-400 disabled:bg-red-500/80 flex justify-center"
+									disabled={deleteUserMutation.isLoading}
+									onClick={() => {
+										if (selectedUser) {
+											deleteUserMutation.mutate({ id: selectedUser.id });
+										}
+									}}
+								>
+									{deleteUserMutation.isLoading ? (
+										<Icon
+											id="spinner"
+											className="h-5 w-5 animate-spin fill-red-500/30 text-gray-300"
+										/>
+									) : (
+										"Yes"
+									)}
+								</button>
+							</div>
+						</div>
+					</Dialog.Panel>
+				</div>
+			</Dialog>
+
+			<Dialog
 				open={isFormDialogOpen}
 				onClose={() => {
 					setIsFormDialogOpen(false);
-					setSelectedUser(null);
 				}}
 				className={`relative z-50 ${inter.className} font-sans`}
 			>
