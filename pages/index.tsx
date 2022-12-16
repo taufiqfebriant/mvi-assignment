@@ -25,7 +25,7 @@ const PostsList = (props: PostsListProps) => {
 
 	if (posts.isLoading || posts.isPreviousData) {
 		return (
-			<div className="flex justify-center items-center h-full">
+			<div className="flex justify-center items-center mt-10">
 				<Icon
 					id="spinner"
 					className="h-8 w-8 animate-spin fill-slate-900 text-gray-300"
@@ -36,7 +36,7 @@ const PostsList = (props: PostsListProps) => {
 
 	if (posts.isError) {
 		return (
-			<div className="flex justify-center items-center h-full">
+			<div className="flex justify-center items-center mt-10">
 				<p>Something went wrong.</p>
 			</div>
 		);
@@ -44,7 +44,7 @@ const PostsList = (props: PostsListProps) => {
 
 	if (!posts.data.data.length) {
 		return (
-			<div className="flex justify-center items-center h-full">
+			<div className="flex justify-center items-center mt-10">
 				<p>No posts yet.</p>
 			</div>
 		);
